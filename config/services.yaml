@@ -1,0 +1,127 @@
+# ---------------------------------------------------------------------------
+# AI Lead Radar: configuration
+# Edit this file to change what the radar looks for. No code changes needed.
+# ---------------------------------------------------------------------------
+
+owner:
+  name: Tanmay
+  # Used by the AI when writing reply drafts. Edit freely.
+  about: >
+    Tanmay runs a small digital services business in India with a team of
+    trained interns. He personally handles Meta Ads, SEO, web development and
+    AI automation, and gets help on anything beyond that.
+  reply_style: >
+    Friendly, short (3-5 sentences), human, never pushy. Mention one concrete
+    detail from the post so it does not feel like a template. Do NOT mention
+    prices. End with a low-pressure invitation to a quick call or chat.
+
+# Languages the radar should understand and draft in.
+languages: [English, Hinglish]
+
+# How far back to look. 24h target plus a small buffer; duplicates are
+# filtered out by the memory file so the overlap is harmless.
+lookback_hours: 26
+
+# Digest size and quality bar
+max_leads_per_day: 10
+min_score: 55          # 0-100, leads below this are dropped
+
+# Safety cap on how many posts are sent to the AI per run (protects free quota)
+max_posts_to_ai: 120
+
+services:
+  - id: meta_ads
+    name: Meta Ads
+    description: >
+      Facebook and Instagram advertising: campaign setup, creatives, lead
+      generation and sales campaigns, ad account recovery, scaling spend,
+      fixing poor ROAS.
+    ideal_client: >
+      Small and mid-size businesses, D2C and e-commerce brands, coaches,
+      clinics, real-estate and local businesses that want leads or sales from
+      paid social and need someone to run it.
+
+  - id: seo
+    name: SEO
+    description: >
+      Search engine optimisation: on-page, technical SEO, content and link
+      building, local SEO and Google Business Profile, ranking recovery.
+    ideal_client: >
+      Business owners, agencies and startups that want more organic traffic or
+      better rankings and are looking for an SEO person or agency.
+
+  - id: web_dev
+    name: Web Development
+    description: >
+      Websites and web apps: WordPress, Shopify, landing pages, business
+      sites, custom web apps, redesigns, bug fixes and speed optimisation.
+    ideal_client: >
+      Businesses and founders that need a new website, a redesign, a store, or
+      a developer for a defined project.
+
+  - id: ai_automation
+    name: AI Automation
+    description: >
+      AI chatbots, workflow automation (n8n, Make, Zapier), WhatsApp and
+      Telegram bots, lead-gen and CRM automation, AI agents, custom scripts.
+    ideal_client: >
+      Businesses and founders who want to automate repetitive work, build a
+      bot or integrate AI into their operations.
+
+# ---------------------------------------------------------------------------
+# Sources
+# ---------------------------------------------------------------------------
+sources:
+  reddit:
+    enabled: true
+    subreddits:
+      - forhire
+      - hiring
+      - DigitalMarketing
+      - PPC
+      - FacebookAds
+      - SEO
+      - bigseo
+      - webdev
+      - web_design
+      - Wordpress
+      - shopify
+      - smallbusiness
+      - Entrepreneur
+      - startups
+      - indianstartups
+      - ecommerce
+      - automation
+      - n8n
+      - SaaS
+    per_subreddit_limit: 60
+
+  freelancer:
+    enabled: true
+    # Queries are also derived from the services above; add extras here.
+    queries:
+      - facebook ads
+      - meta ads
+      - instagram ads
+      - seo
+      - wordpress website
+      - shopify store
+      - web developer
+      - ai automation
+      - chatbot
+      - n8n
+      - zapier
+      - whatsapp bot
+    limit_per_query: 30
+
+  rss:
+    enabled: true
+    # Add any forum / community / job-board RSS feeds here.
+    feeds: []
+    #  - https://example.com/forum/feed.rss
+
+  # Finds public LinkedIn / X / Quora / Facebook posts using Gemini with
+  # Google Search. Coverage is partial: only posts that Google has indexed.
+  search_discovery:
+    enabled: true
+    platforms: [linkedin.com, x.com, quora.com, facebook.com]

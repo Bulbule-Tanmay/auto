@@ -1,0 +1,49 @@
+name: Daily Lead Radar
+
+on:
+  schedule:
+    - cron: "0 3 * * *"      # 03:00 UTC = 08:30 IST (GitHub may start it 5-20 min late)
+  workflow_dispatch:          # lets you run it manually from the Actions tab
+
+concurrency:
+  group: radar-state          # never run two jobs that write state.json at once
+  cancel-in-progress: false
+
+permissions:
+  contents: write             # needed to save state/state.json back to the repo
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run radar
+        run: python -m radar run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          FREELANCER_TOKEN: ${{ secrets.FREELANCER_TOKEN }}
+
+      - name: Save memory (dedupe + feedback)
+        if: always()
+        run: |
+          git config user.name "lead-radar-bot"
+          git config user.email "lead-radar-bot@users.noreply.github.com"
+          git add state/state.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update radar memory"
+            git pull --rebase
+            git push
+          fi
