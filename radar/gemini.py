@@ -8,28 +8,24 @@ import requests
 
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
+# Tried in order. Set GEMINI_MODEL (secret or env) to force a specific model first.
+DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-flash-latest"]
+
 
 class GeminiError(Exception):
     pass
 
 
-def generate(prompt: str, *, json_mode: bool = False, search: bool = False,
-             temperature: float = 0.3, retries: int = 4) -> str:
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
-        raise GeminiError("GEMINI_API_KEY is not set")
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+class ModelUnavailable(GeminiError):
+    pass
 
-    body = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": temperature},
-    }
-    if search:
-        # JSON mode cannot be combined with the search tool
-        body["tools"] = [{"google_search": {}}]
-    elif json_mode:
-        body["generationConfig"]["responseMimeType"] = "application/json"
 
+def _models() -> list[str]:
+    forced = os.environ.get("GEMINI_MODEL", "").strip()
+    return [forced] + [m for m in DEFAULT_MODELS if m != forced] if forced else DEFAULT_MODELS
+
+
+def _one(model: str, key: str, body: dict, retries: int) -> str:
     delay = 10
     last = "unknown error"
     for _ in range(retries):
@@ -51,6 +47,8 @@ def generate(prompt: str, *, json_mode: bool = False, search: bool = False,
             time.sleep(delay)
             delay *= 2
             continue
+        if r.status_code == 404:
+            raise ModelUnavailable(f"{model}: HTTP 404 {r.text[:200]}")
         if r.status_code != 200:
             raise GeminiError(f"HTTP {r.status_code}: {r.text[:300]}")
 
@@ -62,6 +60,31 @@ def generate(prompt: str, *, json_mode: bool = False, search: bool = False,
             reason = data.get("promptFeedback", {}).get("blockReason", "empty response")
             raise GeminiError(f"No content returned ({reason})")
     raise GeminiError(f"Gemini failed after {retries} tries ({last})")
+
+
+def generate(prompt: str, *, json_mode: bool = False, search: bool = False,
+             temperature: float = 0.3, retries: int = 4) -> str:
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        raise GeminiError("GEMINI_API_KEY is not set")
+
+    body = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": temperature},
+    }
+    if search:
+        # JSON mode cannot be combined with the search tool
+        body["tools"] = [{"google_search": {}}]
+    elif json_mode:
+        body["generationConfig"]["responseMimeType"] = "application/json"
+
+    errors = []
+    for model in _models():
+        try:
+            return _one(model, key, body, retries)
+        except ModelUnavailable as e:
+            errors.append(str(e))      # model retired/unknown: try the next one
+    raise GeminiError("No Gemini model available. " + " | ".join(errors))
 
 
 def parse_json(text: str):
