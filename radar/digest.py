@@ -37,6 +37,8 @@ def lead_message(rank: int, lead: Lead) -> tuple[str, list[list[dict]], str]:
     meta = [SOURCE_LABEL.get(p.source, p.source)]
     if p.meta.get("subreddit"):
         meta[0] += f" r/{p.meta['subreddit']}"
+    if p.source == "search" and p.meta.get("platform"):
+        meta[0] = f"Google · {p.meta['platform']}"
     if lead.location:
         meta.append(f"📍 {lead.location}")
     budget = lead.budget_clue or p.meta.get("budget", "")

@@ -72,8 +72,11 @@ services:
 # Sources
 # ---------------------------------------------------------------------------
 sources:
+  # Direct Reddit fetching is OFF (needs Reddit API credentials, and Reddit blocks
+  # cloud IPs). Reddit posts are found through Google-indexed search instead
+  # (see search_discovery below). Set enabled: true only if you add API keys.
   reddit:
-    enabled: true
+    enabled: false
     subreddits:
       - forhire
       - hiring
@@ -120,8 +123,12 @@ sources:
     feeds: []
     #  - https://example.com/forum/feed.rss
 
-  # Finds public LinkedIn / X / Quora / Facebook posts using Gemini with
-  # Google Search. Coverage is partial: only posts that Google has indexed.
+  # Finds public posts using Gemini with Google Search. Coverage is partial:
+  # only posts that Google has indexed (usually a few hours to days after posting).
+  # Each service is searched once per group below (one Gemini call each).
   search_discovery:
     enabled: true
-    platforms: [linkedin.com, x.com, quora.com, facebook.com]
+    platform_groups:
+      - [reddit.com]
+      - [linkedin.com, x.com]
+      - [quora.com, facebook.com, upwork.com]

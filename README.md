@@ -9,8 +9,9 @@ It runs free on GitHub Actions. There is no server and no PC needs to be on.
 
 ## How it works
 
-1. **Collect** posts from the last ~24h: Reddit, Freelancer.com, optional RSS feeds, and
-   Gemini + Google Search discovery of public LinkedIn / X / Quora / Facebook posts.
+1. **Collect** posts from the last ~24h: Freelancer.com (API), optional RSS feeds, and
+   Gemini + Google Search discovery of public Reddit / LinkedIn / X / Quora / Facebook / Upwork posts.
+   No Reddit or other platform API keys are needed.
 2. **Pre-filter** with cheap keywords (English + Hinglish) so only plausible posts reach the AI.
 3. **AI intent detection** (Gemini free tier): real buyer or not, which service, urgency,
    budget clue, location, score 0-100, and a reply draft in the post's language.
@@ -32,12 +33,7 @@ The memory file lists the leads you were sent, so keep it private.
 | `TELEGRAM_CHAT_ID` | Message your bot once (send `/start`), then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and read `chat.id` |
 | `GEMINI_API_KEY` | https://aistudio.google.com/apikey |
 
-Optional but recommended:
-
-| Secret | Why |
-|---|---|
-| `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` | Reddit often blocks anonymous requests from cloud servers. Create a free "script" app at https://www.reddit.com/prefs/apps and paste its id and secret. |
-| `FREELANCER_TOKEN` | Higher limits on the Freelancer.com API. |
+Optional: `FREELANCER_TOKEN` gives higher limits on the Freelancer.com API (not required).
 
 ### 3. Add them to GitHub
 Repo -> Settings -> Secrets and variables -> Actions -> **New repository secret**, one per row above.
@@ -54,7 +50,8 @@ Edit `config/services.yaml`:
 - **services**: describe each service and your ideal client. The AI uses this to decide what is a lead.
 - **owner.reply_style**: tone and rules for drafts.
 - **max_leads_per_day / min_score**: digest size and quality bar.
-- **sources**: subreddits, Freelancer search terms, extra RSS feeds.
+- **sources**: Freelancer search terms, extra RSS feeds, and which sites Google discovery
+  searches (`platform_groups`). Direct Reddit fetching exists but is switched off by default.
 
 ## Run it on your own computer (optional)
 
@@ -70,11 +67,12 @@ python -m radar run                                # real run, sends to Telegram
 
 | Source | Status |
 |---|---|
-| Reddit | Good with the free API credentials, unreliable without |
-| Freelancer.com | Good |
+| Freelancer.com | Good (official API, no key needed) |
 | RSS / forums | Good, add feeds you care about |
-| LinkedIn / X / Quora / Facebook | Partial. Found only via Google-indexed public posts, flagged "verify the post" in the digest. These sites block direct scraping. |
-| Upwork | Not included (no public feed, restrictive terms) |
+| Reddit, LinkedIn, X, Quora, Facebook, Upwork | Partial. Found only via Google-indexed public posts, so very fresh posts may be missed. Flagged "verify the post" in the digest. |
+
+Google discovery costs a few Gemini calls per run (services x platform groups). If you hit the
+free-tier limit, trim `platform_groups` in the config.
 
 ## Good to know
 
