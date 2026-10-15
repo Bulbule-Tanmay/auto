@@ -45,9 +45,13 @@ def collect(cfg: dict, since_ts: float) -> tuple[list[Post], list[str]]:
     allowed = tuple({d for g in groups for d in g} | {"twitter.com"})
     posts: dict[str, Post] = {}
     notes: list[str] = []
-    total = failed = 0
+    total = failed = streak = 0
+    last_reason = ""
+    stop = False
 
     for svc in cfg["services"]:
+        if stop:
+            break
         for group in groups:
             total += 1
             prompt = PROMPT.format(
@@ -56,12 +60,19 @@ def collect(cfg: dict, since_ts: float) -> tuple[list[Post], list[str]]:
                 platforms=", ".join(group),
             )
             try:
-                items = parse_json(generate(prompt, search=True, temperature=0.2))
+                # 2 tries (about 30s) instead of 4: a rate-limited key will not recover in-run
+                items = parse_json(generate(prompt, search=True, temperature=0.2, retries=2, base_delay=15))
                 if not isinstance(items, list):
                     items = []
+                streak = 0
             except Exception as e:  # noqa: BLE001
                 failed += 1
-                log(f"discovery {svc['id']} {group}: {safe_err(e)}")
+                streak += 1
+                last_reason = f"{type(e).__name__}: {str(e)[:260]}"
+                log(f"discovery {svc['id']} {group}: {last_reason}")
+                if streak >= 2:      # circuit breaker: stop burning minutes on a broken tool
+                    stop = True
+                    break
                 time.sleep(5)
                 continue
             for it in items:
@@ -84,5 +95,6 @@ def collect(cfg: dict, since_ts: float) -> tuple[list[Post], list[str]]:
                 )
             time.sleep(6)  # stay under free-tier rate limits
     if failed:
-        notes.append(f"search discovery: {failed}/{total} queries failed")
+        skipped = "stopped early after repeated failures; " if stop else ""
+        notes.append(f"search discovery: {failed} queries failed, {skipped}last error: {last_reason}")
     return list(posts.values()), notes

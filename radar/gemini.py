@@ -25,8 +25,8 @@ def _models() -> list[str]:
     return [forced] + [m for m in DEFAULT_MODELS if m != forced] if forced else DEFAULT_MODELS
 
 
-def _one(model: str, key: str, body: dict, retries: int) -> str:
-    delay = 10
+def _one(model: str, key: str, body: dict, retries: int, base_delay: int) -> str:
+    delay = base_delay
     last = "unknown error"
     for _ in range(retries):
         try:
@@ -43,7 +43,7 @@ def _one(model: str, key: str, body: dict, retries: int) -> str:
             continue
 
         if r.status_code in (429, 500, 502, 503, 504):
-            last = f"HTTP {r.status_code}"
+            last = f"HTTP {r.status_code} {' '.join(r.text.split())[:240]}"
             time.sleep(delay)
             delay *= 2
             continue
@@ -63,7 +63,7 @@ def _one(model: str, key: str, body: dict, retries: int) -> str:
 
 
 def generate(prompt: str, *, json_mode: bool = False, search: bool = False,
-             temperature: float = 0.3, retries: int = 4) -> str:
+             temperature: float = 0.3, retries: int = 4, base_delay: int = 10) -> str:
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         raise GeminiError("GEMINI_API_KEY is not set")
@@ -81,7 +81,7 @@ def generate(prompt: str, *, json_mode: bool = False, search: bool = False,
     errors = []
     for model in _models():
         try:
-            return _one(model, key, body, retries)
+            return _one(model, key, body, retries, base_delay)
         except ModelUnavailable as e:
             errors.append(str(e))      # model retired/unknown: try the next one
     raise GeminiError("No Gemini model available. " + " | ".join(errors))
