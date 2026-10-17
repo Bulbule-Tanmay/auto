@@ -32,6 +32,8 @@ max_posts_to_ai: 120
 services:
   - id: meta_ads
     name: Meta Ads
+    beatapi_queries:
+      - "looking to hire facebook ads expert OR meta ads manager for my business"
     description: >
       Facebook and Instagram advertising: campaign setup, creatives, lead
       generation and sales campaigns, ad account recovery, scaling spend,
@@ -43,6 +45,8 @@ services:
 
   - id: seo
     name: SEO
+    beatapi_queries:
+      - "looking for SEO expert OR SEO agency to rank my website"
     description: >
       Search engine optimisation: on-page, technical SEO, content and link
       building, local SEO and Google Business Profile, ranking recovery.
@@ -52,6 +56,8 @@ services:
 
   - id: web_dev
     name: Web Development
+    beatapi_queries:
+      - "need a web developer OR website designer for my business, recommendations"
     description: >
       Websites and web apps: WordPress, Shopify, landing pages, business
       sites, custom web apps, redesigns, bug fixes and speed optimisation.
@@ -61,6 +67,8 @@ services:
 
   - id: ai_automation
     name: AI Automation
+    beatapi_queries:
+      - "looking for someone to build AI chatbot OR whatsapp bot OR n8n automation"
     description: >
       AI chatbots, workflow automation (n8n, Make, Zapier), WhatsApp and
       Telegram bots, lead-gen and CRM automation, AI agents, custom scripts.
@@ -99,23 +107,17 @@ sources:
       - SaaS
     per_subreddit_limit: 60
 
-  freelancer:
+  # BeatAPI Web Search (https://docs.beatapi.io/web-search). Needs the BEATAPI_API_KEY secret.
+  # Cost: $0.005 per search call. Calls per run = services x beatapi_queries x platform_groups
+  # (4 x 1 x 3 = 12 calls, about $0.06 per day). Posts are flagged "verify the post".
+  beatapi:
     enabled: true
-    # Queries are also derived from the services above; add extras here.
-    queries:
-      - facebook ads
-      - meta ads
-      - instagram ads
-      - seo
-      - wordpress website
-      - shopify store
-      - web developer
-      - ai automation
-      - chatbot
-      - n8n
-      - zapier
-      - whatsapp bot
-    limit_per_query: 30
+    time_range: week        # day | week | month | year (Google-indexed posts lag, so week is safer)
+    max_results: 10         # per call, 1-10
+    platform_groups:        # each group is one call per service query (max 10 domains per group)
+      - [reddit.com]
+      - [linkedin.com, x.com, twitter.com]
+      - [quora.com, facebook.com, upwork.com]
 
   rss:
     enabled: true

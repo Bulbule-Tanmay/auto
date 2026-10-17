@@ -26,13 +26,30 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Check secrets (names only, values are never printed)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BEATAPI_API_KEY: ${{ secrets.BEATAPI_API_KEY }}
+        run: |
+          missing=0
+          for name in TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID GEMINI_API_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Secret $name is not set (Settings -> Secrets and variables -> Actions)"; missing=1; fi
+          done
+          if [ -z "$BEATAPI_API_KEY" ]; then echo "::warning::BEATAPI_API_KEY is not set, the BeatAPI source will be skipped"; fi
+          exit $missing
+
+      - name: Offline smoke test (no keys, no network)
+        run: python -m radar run --sample --mock-ai --dry-run > /dev/null
+
       - name: Run radar
         run: python -m radar run
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FREELANCER_TOKEN: ${{ secrets.FREELANCER_TOKEN }}
+          BEATAPI_API_KEY: ${{ secrets.BEATAPI_API_KEY }}
 
       - name: Save memory (dedupe + feedback)
         if: always()
@@ -42,6 +59,9 @@ jobs:
           git add state/state.json || true
           if ! git diff --cached --quiet; then
             git commit -m "chore: update radar memory"
-            git pull --rebase
-            git push
+            for i in 1 2 3; do
+              git pull --rebase && git push && exit 0
+              echo "push attempt $i failed, retrying"; sleep $((i * 5))
+            done
+            echo "::error::Could not push state/state.json"; exit 1
           fi

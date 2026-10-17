@@ -6,7 +6,7 @@ from .util import clip, esc, short_id
 
 IST = timezone(timedelta(hours=5, minutes=30))
 URGENCY_ICON = {"high": "🔴", "medium": "🟡", "low": "🟢"}
-SOURCE_LABEL = {"reddit": "Reddit", "freelancer": "Freelancer", "rss": "Forum/RSS", "search": "Web search"}
+SOURCE_LABEL = {"reddit": "Reddit", "beatapi": "BeatAPI", "rss": "Forum/RSS", "search": "Web search"}
 
 
 def header(n_leads: int, scanned: int, stats: dict, notes: list[str]) -> str:
@@ -39,6 +39,8 @@ def lead_message(rank: int, lead: Lead) -> tuple[str, list[list[dict]], str]:
         meta[0] += f" r/{p.meta['subreddit']}"
     if p.source == "search" and p.meta.get("platform"):
         meta[0] = f"Google · {p.meta['platform']}"
+    elif p.source == "beatapi" and p.meta.get("platform"):
+        meta[0] = f"BeatAPI · {p.meta['platform']}"
     if lead.location:
         meta.append(f"📍 {lead.location}")
     budget = lead.budget_clue or p.meta.get("budget", "")

@@ -9,8 +9,8 @@ It runs free on GitHub Actions. There is no server and no PC needs to be on.
 
 ## How it works
 
-1. **Collect** posts from the last ~24h: Freelancer.com (API), optional RSS feeds, and
-   Gemini + Google Search discovery of public Reddit / LinkedIn / X / Quora / Facebook / Upwork posts.
+1. **Collect** recent posts from: BeatAPI Web Search (public Reddit / LinkedIn / X / Quora /
+   Facebook / Upwork posts), optional RSS feeds, and Gemini + Google Search discovery.
    No Reddit or other platform API keys are needed.
 2. **Pre-filter** with cheap keywords (English + Hinglish) so only plausible posts reach the AI.
 3. **AI intent detection** (Gemini free tier): real buyer or not, which service, urgency,
@@ -33,7 +33,9 @@ The memory file lists the leads you were sent, so keep it private.
 | `TELEGRAM_CHAT_ID` | Message your bot once (send `/start`), then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and read `chat.id` |
 | `GEMINI_API_KEY` | https://aistudio.google.com/apikey |
 
-Optional: `FREELANCER_TOKEN` gives higher limits on the Freelancer.com API (not required).
+| `BEATAPI_API_KEY` | https://beatapi.io/dashboard/apikeys (add balance; each search costs $0.005) |
+
+If `BEATAPI_API_KEY` is missing the BeatAPI source is skipped and the digest says so.
 
 ### 3. Add them to GitHub
 Repo -> Settings -> Secrets and variables -> Actions -> **New repository secret**, one per row above.
@@ -50,15 +52,18 @@ Edit `config/services.yaml`:
 - **services**: describe each service and your ideal client. The AI uses this to decide what is a lead.
 - **owner.reply_style**: tone and rules for drafts.
 - **max_leads_per_day / min_score**: digest size and quality bar.
-- **sources**: Freelancer search terms, extra RSS feeds, and which sites Google discovery
-  searches (`platform_groups`). Direct Reddit fetching exists but is switched off by default.
+- **services[].beatapi_queries**: the search phrase BeatAPI uses for each service.
+- **sources.beatapi**: `platform_groups` (sites to search), `time_range`, `max_results`.
+  Default is 12 searches per run, about $0.06 per day.
+- **sources**: extra RSS feeds, and which sites Google discovery searches. Direct Reddit
+  fetching exists but is switched off by default.
 
 ## Run it on your own computer (optional)
 
 ```bash
 pip install -r requirements.txt
 python -m radar run --sample --mock-ai --dry-run   # offline pipeline test, no keys
-export GEMINI_API_KEY=...  TELEGRAM_BOT_TOKEN=...  TELEGRAM_CHAT_ID=...
+export GEMINI_API_KEY=...  TELEGRAM_BOT_TOKEN=...  TELEGRAM_CHAT_ID=...  BEATAPI_API_KEY=...
 python -m radar run --dry-run                      # real fetch + AI, prints instead of sending
 python -m radar run                                # real run, sends to Telegram
 ```
@@ -67,9 +72,9 @@ python -m radar run                                # real run, sends to Telegram
 
 | Source | Status |
 |---|---|
-| Freelancer.com | Good (official API, no key needed) |
+| BeatAPI Web Search | Good for Reddit, LinkedIn, X, Quora, Facebook, Upwork. Search-index based, so very fresh posts may be missed. Flagged "verify the post". |
 | RSS / forums | Good, add feeds you care about |
-| Reddit, LinkedIn, X, Quora, Facebook, Upwork | Partial. Found only via Google-indexed public posts, so very fresh posts may be missed. Flagged "verify the post" in the digest. |
+| Gemini + Google Search discovery | Partial. Google-indexed public posts only. Flagged "verify the post" in the digest. |
 
 Google discovery costs a few Gemini calls per run (services x platform groups). If you hit the
 free-tier limit, trim `platform_groups` in the config.
@@ -83,3 +88,11 @@ free-tier limit, trim `platform_groups` in the config.
 - GitHub pauses scheduled workflows after 60 days with no repo activity. The radar's own
   memory commits count as activity, so this normally does not happen.
 - The free Gemini tier has rate limits. The radar batches posts and pauses between calls to stay inside them.
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
+```
+The `Tests` workflow runs these on every push. The daily workflow also checks that your
+secrets exist and runs an offline smoke test before the real run.

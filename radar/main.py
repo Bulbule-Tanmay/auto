@@ -15,14 +15,14 @@ from .classify import classify
 from .gemini import GeminiError
 from .models import Post
 from .prefilter import plausible
-from .sources import discovery, freelancer, reddit, rss
+from .sources import beatapi, discovery, reddit, rss
 from .util import clip, log, safe_err, short_id
 
 CONFIG_PATH = os.environ.get("RADAR_CONFIG", "config/services.yaml")
 
 SOURCES = {
     "reddit": reddit.collect,
-    "freelancer": freelancer.collect,
+    "beatapi": beatapi.collect,
     "rss": rss.collect,
     "search_discovery": discovery.collect,
 }
@@ -84,9 +84,9 @@ def sample_posts() -> list[Post]:
         Post("reddit:s2", "reddit", "[For Hire] Web developer available for projects",
              "I build WordPress sites. DM me.", "https://reddit.com/r/test/s2", created_utc=t,
              meta={"subreddit": "forhire"}),
-        Post("freelancer:s3", "freelancer", "Need a developer to automate WhatsApp lead replies using n8n",
+        Post("beatapi:s3", "beatapi", "Need a developer to automate WhatsApp lead replies using n8n",
              "Looking for someone who can build a WhatsApp bot that qualifies leads and updates Google Sheets.",
-             "https://freelancer.com/projects/s3", created_utc=t, meta={"budget": "5000-15000 INR"}),
+             "https://www.linkedin.com/posts/s3", created_utc=t, meta={"platform": "linkedin.com", "unverified": True}),
         Post("reddit:s4", "reddit", "What is your favourite SEO tool?", "Just curious what everyone uses.",
              "https://reddit.com/r/test/s4", created_utc=t, meta={"subreddit": "SEO"}),
     ]
@@ -109,7 +109,7 @@ def run(args) -> int:
 
     if args.sample:
         posts = sample_posts()
-        stats = {"reddit": 3, "freelancer": 1}
+        stats = {"reddit": 3, "beatapi": 1}
     else:
         for name, fn in SOURCES.items():
             if not cfg["sources"].get(name, {}).get("enabled"):

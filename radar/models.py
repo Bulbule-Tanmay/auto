@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 @dataclass
 class Post:
     id: str                 # globally unique, e.g. "reddit:abc123"
-    source: str             # reddit | freelancer | rss | search
+    source: str             # reddit | beatapi | rss | search
     title: str
     text: str
     url: str

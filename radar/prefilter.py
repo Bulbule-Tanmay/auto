@@ -20,7 +20,7 @@ NEGATIVE = re.compile(
 )
 
 # These sources are already request-shaped, so skip the keyword check
-TRUSTED_SOURCES = {"freelancer", "search"}
+TRUSTED_SOURCES = {"beatapi", "search"}
 
 
 def plausible(p: Post) -> bool:
